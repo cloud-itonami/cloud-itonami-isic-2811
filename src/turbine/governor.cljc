@@ -10,13 +10,14 @@
   able to *reject* a proposal and fall back to HOLD -- the turbine plant-
   manufacturer analog of `cloud-itonami-isic-6512`'s CasualtyGovernor.
 
-  Six checks, in priority order, ALL HARD violations: a human approver
+  Seven checks, in priority order, ALL HARD violations: a human approver
   CANNOT override them (you don't get to approve your way past a
-  fabricated class spec-basis, incomplete evidence, an out-of-
-  spec unit, an unresolved NDT defect, or a double dispatch/
-  evidence-issuance). The confidence/actuation gate is SOFT: it asks a
-  human to look (low confidence / actuation), and the human may
-  approve -- but see `turbine.phase`: for `:stake :actuation/
+  fabricated class spec-basis, incomplete evidence, a robot fastener-
+  qualification mission that never ran or that independently rechecks
+  out-of-tolerance, an out-of-spec unit, an unresolved NDT defect, or a
+  double dispatch/evidence-issuance). The confidence/actuation gate is
+  SOFT: it asks a human to look (low confidence / actuation), and the
+  human may approve -- but see `turbine.phase`: for `:stake :actuation/
   dispatch-assembly`/`:actuation/issue-type-evidence` (a real
   safety-critical act) NO phase ever allows auto-commit either. Two
   independent layers agree that actuation is always a human call.
@@ -33,7 +34,38 @@
                                        NDT-chain-of-custody-record/
                                        material-certification-record
                                        evidence checklist on file?
-    3. Unit tolerance out of
+    3. Robot fastener-qualification
+       missing or independently
+       out-of-tolerance              -- for `:actuation/dispatch-
+                                       unit` (ADR-2607999500), has the
+                                       robot rod-bolt/head-bolt
+                                       fastener-qualification mission
+                                       (`turbine.robotics`) actually
+                                       run and been recorded on the
+                                       unit (`:robotics-sim-
+                                       verified?`)? AND INDEPENDENTLY
+                                       recompute whether the unit's own
+                                       recorded REAL `physics-2d`-
+                                       simulated connecting-rod/
+                                       cylinder-head bolt tensile
+                                       proof-load telemetry
+                                       (`:sim-proof-load-force`) falls
+                                       below its real disclosed floor
+                                       (`turbine.robotics/rod-bolt-
+                                       proof-load-out-of-tolerance?`),
+                                       ignoring whatever :passed?
+                                       verdict the mission run itself
+                                       stored -- the same 'ground
+                                       truth, not self-report'
+                                       discipline check 4 below uses
+                                       for dimensional tolerance. This
+                                       is ADDITIONAL to (never a
+                                       replacement for) the existing
+                                       evidence-checklist check above,
+                                       an unrelated QA domain (fastener
+                                       tensile qualification, not
+                                       paperwork completeness).
+    4. Unit tolerance out of
        range                         -- for `:actuation/dispatch-
                                        assembly`, INDEPENDENTLY
                                        recompute whether the
@@ -55,7 +87,7 @@
                                        contaminant-level-out-of-range-
                                        violations` established the
                                        first three).
-    4. NDT defect unresolved        -- reported by THIS proposal itself
+    5. NDT defect unresolved        -- reported by THIS proposal itself
                                        (an `:ndt/screen` that just
                                        found an unresolved defect), or
                                        already on file for the
@@ -79,7 +111,7 @@
                                        an actuation op against an
                                        unscreened unit -- see this
                                        ns's own test suite.
-    5. Confidence floor / actuation
+    6. Confidence floor / actuation
        gate                          -- LLM confidence below threshold,
                                        OR the op is `:actuation/
                                        dispatch-assembly`/`:actuation/
@@ -99,6 +131,7 @@
   isic-6492`'s status-lifecycle bug (ADR-2607071320)."
   (:require [turbine.facts :as facts]
             [turbine.registry :as registry]
+            [turbine.robotics :as robotics]
             [turbine.store :as store]))
 
 (def confidence-floor 0.6)
@@ -140,6 +173,33 @@
                       (:jurisdiction a) (:checklist verification)))
         [{:rule :evidence-incomplete
           :detail "法域の必要書類(CAEシミュレーション報告書/CFD検証報告書/非破壊検査連鎖記録/材料証明記録等)が充足していない状態での提案"}]))))
+
+(defn- robotics-simulation-violations
+  "For `:actuation/dispatch-unit` (ADR-2607999500): HARD hold if the
+  robot rod-bolt/head-bolt fastener-qualification mission
+  (`turbine.robotics`) never ran and was recorded on the unit
+  (`:robotics-sim-verified?`), OR if it did but an INDEPENDENT
+  recompute of the unit's own recorded REAL `physics-2d`-simulated
+  connecting-rod/cylinder-head bolt tensile proof-load telemetry
+  (`turbine.robotics/simulation-out-of-tolerance?`) says out-of-
+  tolerance right now -- never trusts the mission's own stored
+  :passed? verdict alone, the same discipline `unit-tolerance-out-of-
+  range-violations` below uses for dimensional tolerance. ADDITIONAL to
+  (never a replacement for) `evidence-incomplete-violations` above --
+  an unrelated QA domain (fastener tensile qualification, not
+  paperwork completeness)."
+  [{:keys [op subject]} st]
+  (when (= op :actuation/dispatch-unit)
+    (let [a (store/unit st subject)]
+      (cond
+        (not (:robotics-sim-verified? a))
+        [{:rule :robotics-simulation-missing
+          :detail (str subject " のロッドボルト/シリンダーヘッドボルト張力試験ミッションが未実行・未合格")}]
+
+        (robotics/simulation-out-of-tolerance? a)
+        [{:rule :robotics-simulation-out-of-tolerance
+          :detail (str subject " の実測ボルト耐力試験荷重(" (:sim-proof-load-force a)
+                       "N)が独立再検証で最低要求値(" robotics/min-rod-bolt-proof-load-n "N)を下回る")}]))))
 
 (defn- unit-tolerance-out-of-range-violations
   "For `:actuation/dispatch-unit`, INDEPENDENTLY recompute whether
@@ -199,6 +259,7 @@
   (let [hard (into []
                    (concat (spec-basis-violations request proposal)
                            (evidence-incomplete-violations request st)
+                           (robotics-simulation-violations request st)
                            (unit-tolerance-out-of-range-violations request st)
                            (ndt-defect-unresolved-violations request proposal st)
                            (already-dispatched-violations request st)

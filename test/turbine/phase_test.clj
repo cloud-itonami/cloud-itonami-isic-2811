@@ -24,6 +24,17 @@
       (is (not (contains? auto :ndt/screen))
           (str "phase " n " must not auto-commit :ndt/screen")))))
 
+(deftest robotics-simulate-fastener-qualification-cell-never-auto-at-any-phase
+  (testing "the robot rod-bolt/head-bolt fastener-qualification mission (ADR-2607999500) carries no direct capital risk, but is still never auto-eligible, matching every sibling verification op in this fleet"
+    (doseq [[n {:keys [auto]}] phase/phases]
+      (is (not (contains? auto :robotics/simulate-fastener-qualification-cell))
+          (str "phase " n " must not auto-commit :robotics/simulate-fastener-qualification-cell")))))
+
+(deftest robotics-simulate-fastener-qualification-cell-enabled-from-phase-2
+  (is (contains? (:writes (get phase/phases 2)) :robotics/simulate-fastener-qualification-cell))
+  (is (contains? (:writes (get phase/phases 3)) :robotics/simulate-fastener-qualification-cell))
+  (is (not (contains? (:writes (get phase/phases 1)) :robotics/simulate-fastener-qualification-cell))))
+
 (deftest phase-0-is-fully-read-only
   (is (empty? (:writes (get phase/phases 0)))))
 

@@ -21,6 +21,8 @@
         actor (op/build db)]
     (exec! actor "v" {:op :type-rules/verify :subject "unit-1"})
     (approve! actor "v")
+    (exec! actor "r" {:op :robotics/simulate-fastener-qualification-cell :subject "unit-1"})
+    (approve! actor "r")
     (exec! actor "d" {:op :actuation/dispatch-unit :subject "unit-1"})
     (approve! actor "d")
     db))
@@ -51,5 +53,5 @@
         pkg (export/audit-package db)
         bundle (export/package->csv-bundle db)]
     (is (= 0 (get-in pkg [:counts :dispatches])))
-    (is (= 4 (get-in pkg [:counts :units])))
+    (is (= 5 (get-in pkg [:counts :units])))
     (is (str/includes? (get bundle "ledger.csv") "seq,t,op"))))

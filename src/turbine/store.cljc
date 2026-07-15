@@ -37,6 +37,7 @@
   (:require #?(:clj  [clojure.edn :as edn]
                :cljs [cljs.reader :as edn])
             [turbine.registry :as registry]
+            [turbine.robotics :as robotics]
             [langchain.db :as d]))
 
 (defprotocol Store
@@ -57,32 +58,82 @@
 
 ;; ----------------------------- demo data -----------------------------
 
+(defn- with-proof-load-telemetry
+  "Merges REAL connecting-rod/cylinder-head bolt tensile proof-load
+  pull-test telemetry onto a demo unit's base fields --
+  `turbine.robotics/bolt-proof-load-telemetry-for` actually runs
+  `run-bolt-proof-load-test`'s `physics-2d`-stepped simulation for this
+  unit's own `:rod-bolt-mass-kg` (ADR-2607999500), so even the
+  'already on file' seed data (as if from an earlier real proof-load
+  test) is genuinely simulation-derived, never hand-typed doubles."
+  [base]
+  (merge base (select-keys (robotics/bolt-proof-load-telemetry-for base)
+                           [:sim-proof-load-force :sim-peak-decel-mps2])))
+
 (defn demo-data
   "A small, self-contained unit set covering both actuation
   lifecycles (dispatching a unit action, issuing class
-  evidence) so the actor + tests run offline."
+  evidence) so the actor + tests run offline. `:rod-bolt-mass-kg`
+  (ADR-2607999500) is a permanent unit-design field (like
+  `:dimensional-tolerance-actual`); `:sim-proof-load-force`/
+  `:sim-peak-decel-mps2` are the REAL `turbine.robotics/run-bolt-
+  proof-load-test`-computed telemetry for that field
+  (`with-proof-load-telemetry`), the ground truth `turbine.robotics/
+  simulation-out-of-tolerance?` independently rechecks. unit-5 (a
+  rod-bolt fastening unit) is DELIBERATELY recorded with a much
+  lighter `:rod-bolt-mass-kg` (1.5 kg, the scale of a much smaller
+  fastener-test fixture) than a structural connecting-rod/cylinder-
+  head bolt qualification of this kind should carry -- a genuine
+  design-record inconsistency (no real structural rod-bolt/head-bolt
+  test this actor dispatches would spec down to such a light effective
+  test mass) that the real, re-run simulation catches on independent
+  recheck even though `:robotics-sim-verified?` was seeded `true`
+  (\"already on file\", i.e. someone/something marked it passed without
+  this real check ever having run) -- the engine/turbine-manufacturer
+  analog of `autoparts.store`'s lot-5 (and `automotive.store`'s
+  vehicle-5). unit-1..4's `:rod-bolt-mass-kg` values (2.5-2.8 kg) are
+  all genuinely consistent structural fastener-test-fixture masses,
+  which all clear the real proof-load floor with margin (see
+  `turbine.robotics/min-rod-bolt-proof-load-n`)."
   []
   {:units
-   {"unit-1" {:id "unit-1" :unit-name "Sakura Double-Bottom Unit DB-04"
-                  :dimensional-tolerance-actual 0.05 :dimensional-tolerance-min -0.10 :dimensional-tolerance-max 0.10
-                  :ndt-defect-unresolved? false
-                  :unit-dispatched? false :type-certified? false
-                  :jurisdiction "JPN" :status :intake}
-    "unit-2" {:id "unit-2" :unit-name "Atlantis Side-Shell Unit SS-12"
-                  :dimensional-tolerance-actual 0.05 :dimensional-tolerance-min -0.10 :dimensional-tolerance-max 0.10
-                  :ndt-defect-unresolved? false
-                  :unit-dispatched? false :type-certified? false
-                  :jurisdiction "ATL" :status :intake}
-    "unit-3" {:id "unit-3" :unit-name "鈴木産業用エンジン組立 EA-07"
-                  :dimensional-tolerance-actual 0.35 :dimensional-tolerance-min -0.10 :dimensional-tolerance-max 0.10
-                  :ndt-defect-unresolved? false
-                  :unit-dispatched? false :type-certified? false
-                  :jurisdiction "JPN" :status :intake}
-    "unit-4" {:id "unit-4" :unit-name "田中タービンケーシング TC-03"
-                  :dimensional-tolerance-actual 0.05 :dimensional-tolerance-min -0.10 :dimensional-tolerance-max 0.10
-                  :ndt-defect-unresolved? true
-                  :unit-dispatched? false :type-certified? false
-                  :jurisdiction "JPN" :status :intake}}})
+   (into {}
+         (map (fn [v] [(:id v) (with-proof-load-telemetry v)]))
+         [{:id "unit-1" :unit-name "Sakura Double-Bottom Unit DB-04"
+           :dimensional-tolerance-actual 0.05 :dimensional-tolerance-min -0.10 :dimensional-tolerance-max 0.10
+           :rod-bolt-mass-kg 2.8
+           :ndt-defect-unresolved? false
+           :robotics-sim-verified? false :robotics-sim-record nil
+           :unit-dispatched? false :type-certified? false
+           :jurisdiction "JPN" :status :intake}
+          {:id "unit-2" :unit-name "Atlantis Side-Shell Unit SS-12"
+           :dimensional-tolerance-actual 0.05 :dimensional-tolerance-min -0.10 :dimensional-tolerance-max 0.10
+           :rod-bolt-mass-kg 2.6
+           :ndt-defect-unresolved? false
+           :robotics-sim-verified? false :robotics-sim-record nil
+           :unit-dispatched? false :type-certified? false
+           :jurisdiction "ATL" :status :intake}
+          {:id "unit-3" :unit-name "鈴木産業用エンジン組立 EA-07"
+           :dimensional-tolerance-actual 0.35 :dimensional-tolerance-min -0.10 :dimensional-tolerance-max 0.10
+           :rod-bolt-mass-kg 2.7
+           :ndt-defect-unresolved? false
+           :robotics-sim-verified? false :robotics-sim-record nil
+           :unit-dispatched? false :type-certified? false
+           :jurisdiction "JPN" :status :intake}
+          {:id "unit-4" :unit-name "田中タービンケーシング TC-03"
+           :dimensional-tolerance-actual 0.05 :dimensional-tolerance-min -0.10 :dimensional-tolerance-max 0.10
+           :rod-bolt-mass-kg 2.5
+           :ndt-defect-unresolved? true
+           :robotics-sim-verified? false :robotics-sim-record nil
+           :unit-dispatched? false :type-certified? false
+           :jurisdiction "JPN" :status :intake}
+          {:id "unit-5" :unit-name "鈴木ロッドボルト締結ユニット RB-19"
+           :dimensional-tolerance-actual 0.05 :dimensional-tolerance-min -0.10 :dimensional-tolerance-max 0.10
+           :rod-bolt-mass-kg 1.5
+           :ndt-defect-unresolved? false
+           :robotics-sim-verified? true :robotics-sim-record nil
+           :unit-dispatched? false :type-certified? false
+           :jurisdiction "JPN" :status :intake}])})
 
 ;; ----------------------------- shared commit logic -----------------------------
 
@@ -193,7 +244,8 @@
 (defn- dec* [s] (when s (edn/read-string s)))
 
 (defn- block->tx [{:keys [id unit-name dimensional-tolerance-actual dimensional-tolerance-min dimensional-tolerance-max
-                             ndt-defect-unresolved?
+                             rod-bolt-mass-kg sim-proof-load-force sim-peak-decel-mps2
+                             ndt-defect-unresolved? robotics-sim-verified? robotics-sim-record
                              unit-dispatched? type-certified?
                              jurisdiction status dispatch-number evidence-number]}]
   (cond-> {:unit/id id}
@@ -201,7 +253,12 @@
     dimensional-tolerance-actual                (assoc :unit/dimensional-tolerance-actual dimensional-tolerance-actual)
     dimensional-tolerance-min                   (assoc :unit/dimensional-tolerance-min dimensional-tolerance-min)
     dimensional-tolerance-max                   (assoc :unit/dimensional-tolerance-max dimensional-tolerance-max)
+    rod-bolt-mass-kg                            (assoc :unit/rod-bolt-mass-kg rod-bolt-mass-kg)
+    sim-proof-load-force                        (assoc :unit/sim-proof-load-force sim-proof-load-force)
+    (some? sim-peak-decel-mps2)                 (assoc :unit/sim-peak-decel-mps2 sim-peak-decel-mps2)
     (some? ndt-defect-unresolved?)              (assoc :unit/ndt-defect-unresolved? ndt-defect-unresolved?)
+    (some? robotics-sim-verified?)              (assoc :unit/robotics-sim-verified? robotics-sim-verified?)
+    (some? robotics-sim-record)                 (assoc :unit/robotics-sim-record (enc robotics-sim-record))
     (some? unit-dispatched?)                (assoc :unit/unit-dispatched? unit-dispatched?)
     (some? type-certified?)            (assoc :unit/type-certified? type-certified?)
     jurisdiction                                (assoc :unit/jurisdiction jurisdiction)
@@ -212,7 +269,9 @@
 (def ^:private block-pull
   [:unit/id :unit/unit-name :unit/dimensional-tolerance-actual
    :unit/dimensional-tolerance-min :unit/dimensional-tolerance-max
-   :unit/ndt-defect-unresolved? :unit/unit-dispatched? :unit/type-certified?
+   :unit/rod-bolt-mass-kg :unit/sim-proof-load-force :unit/sim-peak-decel-mps2
+   :unit/ndt-defect-unresolved? :unit/robotics-sim-verified? :unit/robotics-sim-record
+   :unit/unit-dispatched? :unit/type-certified?
    :unit/jurisdiction :unit/status :unit/dispatch-number :unit/evidence-number])
 
 (defn- pull->unit [m]
@@ -221,7 +280,12 @@
      :dimensional-tolerance-actual (:unit/dimensional-tolerance-actual m)
      :dimensional-tolerance-min (:unit/dimensional-tolerance-min m)
      :dimensional-tolerance-max (:unit/dimensional-tolerance-max m)
+     :rod-bolt-mass-kg (:unit/rod-bolt-mass-kg m)
+     :sim-proof-load-force (:unit/sim-proof-load-force m)
+     :sim-peak-decel-mps2 (:unit/sim-peak-decel-mps2 m)
      :ndt-defect-unresolved? (boolean (:unit/ndt-defect-unresolved? m))
+     :robotics-sim-verified? (boolean (:unit/robotics-sim-verified? m))
+     :robotics-sim-record (dec* (:unit/robotics-sim-record m))
      :unit-dispatched? (boolean (:unit/unit-dispatched? m))
      :type-certified? (boolean (:unit/type-certified? m))
      :jurisdiction (:unit/jurisdiction m) :status (:unit/status m)

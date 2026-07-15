@@ -31,6 +31,7 @@
             [clojure.string :as str]
             [turbine.facts :as facts]
             [turbine.registry :as registry]
+            [turbine.robotics :as robotics]
             [turbine.store :as store]
             [langchain.model :as model]))
 
@@ -108,6 +109,36 @@
        :stake      nil
        :confidence 0.9})))
 
+(defn- simulate-fastener-qualification-cell
+  "Runs the robot rod-bolt/head-bolt fastener-qualification mission
+  (`turbine.robotics`, ADR-2607999500) and drafts its result as a
+  proposal. High confidence -- the mission itself is REAL
+  `physics-2d`-simulated connecting-rod/cylinder-head bolt tensile
+  proof-load pull-test telemetry derived from the unit's own recorded
+  `:rod-bolt-mass-kg`, not an LLM guess; the Turbine plant Manufacturing
+  Governor still independently re-derives :passed? from that same
+  telemetry before any `:actuation/dispatch-unit` proposal may commit
+  -- see `turbine.governor`'s `robotics-simulation-violations`."
+  [db {:keys [subject]}]
+  (let [a (store/unit db subject)]
+    (if (nil? a)
+      {:summary "対象ブロック記録が見つかりません" :rationale "no unit record"
+       :cites [] :effect :unit/upsert :value {:id subject :robotics-sim-verified? false}
+       :stake nil :confidence 0.0}
+      (let [{:keys [mission actions passed?]} (robotics/simulate-fastener-qualification-cell subject a)]
+        {:summary    (str subject ": ロッドボルト/シリンダーヘッドボルト張力試験ロボットミッション " (if passed? "合格" "不合格"))
+         :rationale  (str "mission=" (:mission/id mission) " actions=" (count actions)
+                          " sim-proof-load-force=" (:sim-proof-load-force a))
+         :cites      [(:mission/id mission)]
+         :effect     :unit/upsert
+         :value      {:id subject
+                      :robotics-sim-verified? passed?
+                      :robotics-sim-record {:mission-id (:mission/id mission)
+                                            :actions (mapv #(dissoc % :action) actions)
+                                            :passed? passed?}}
+         :stake      nil
+         :confidence 0.95}))))
+
 (defn- propose-block-dispatch
   "Draft the actual ASSEMBLY-DISPATCH action -- dispatching a real
   robot fastening/layup/NDT action on a rotating-critical structure.
@@ -161,6 +192,7 @@
     :unit/intake                            (normalize-intake db request)
     :type-rules/verify                        (verify-requirements db request)
     :ndt/screen                                 (screen-ndt-defect db request)
+    :robotics/simulate-fastener-qualification-cell (simulate-fastener-qualification-cell db request)
     :actuation/dispatch-unit                 (propose-block-dispatch db request)
     :actuation/issue-type-evidence      (propose-type-evidence db request)
     {:summary "未対応の操作" :rationale (str op) :cites []
@@ -183,6 +215,8 @@
        ":cites(使った事実キーのベクタ) "
        ":effect(:unit/upsert|:verification/set|:ndt-screen/set|"
        ":unit/mark-dispatched|:unit/mark-certified) "
+       "(:robotics/simulate-fastener-qualification-cell も :unit/upsert で "
+       ":robotics-sim-verified? を提案する) "
        ":stake(:actuation/dispatch-unit か :actuation/issue-type-evidence か nil) :confidence(0..1)。\n"
        "重要: 登録されていない法域の要件を絶対に創作してはいけません。"
        "spec-basisが無い場合は :cites を空にし confidence を上げないこと。"))
@@ -191,6 +225,7 @@
   (case op
     :type-rules/verify                    {:unit (store/unit st subject)}
     :ndt/screen                              {:unit (store/unit st subject)}
+    :robotics/simulate-fastener-qualification-cell {:unit (store/unit st subject)}
     :actuation/dispatch-unit             {:unit (store/unit st subject)}
     :actuation/issue-type-evidence  {:unit (store/unit st subject)}
     {:unit (store/unit st subject)}))

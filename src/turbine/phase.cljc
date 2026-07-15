@@ -6,8 +6,9 @@
     Phase 1  assisted-intake  -- unit intake allowed, every write
                                  needs human approval.
     Phase 2  assisted-verify  -- adds requirements verification + NDT-
-                                 defect screening writes, still
-                                 approval.
+                                 defect screening + robot fastener-
+                                 qualification simulation (ADR-
+                                 2607999500) writes, still approval.
     Phase 3  supervised auto  -- governor-clean, high-confidence
                                  `:unit/intake` (no capital risk
                                  yet) may auto-commit. `:actuation/
@@ -24,15 +25,17 @@
   always a human turbine manufacturing engineer's call. `turbine.governor`'s
   `:actuation/dispatch-unit`/`:actuation/issue-class-
   evidence` high-stakes gate enforces the same invariant independently
-  -- two layers, not one, agree on this. `:ndt/screen` is likewise
-  never auto-eligible, at any phase -- the same posture every
-  sibling's screening op has. Phase 3's `:auto` set here has only ONE
-  member (`:unit/intake`) -- this domain has no separate no-
+  -- two layers, not one, agree on this. `:ndt/screen`/`:robotics/
+  simulate-fastener-qualification-cell` are likewise never auto-
+  eligible, at any phase -- the same posture every sibling's
+  screening/verification op has. Phase 3's `:auto` set here has only
+  ONE member (`:unit/intake`) -- this domain has no separate no-
   capital-risk 'file' lifecycle distinct from the unit record
   itself.")
 
 (def read-ops  #{})
 (def write-ops #{:unit/intake :type-rules/verify :ndt/screen
+                 :robotics/simulate-fastener-qualification-cell
                  :actuation/dispatch-unit :actuation/issue-type-evidence})
 
 ;; NOTE the invariant: `:actuation/dispatch-unit`/`:actuation/
@@ -44,7 +47,8 @@
   auto-commit when governor-clean>}."
   {0 {:label "read-only"        :writes #{}                                                          :auto #{}}
    1 {:label "assisted-intake"  :writes #{:unit/intake}                                          :auto #{}}
-   2 {:label "assisted-verify"  :writes #{:unit/intake :type-rules/verify :ndt/screen}          :auto #{}}
+   2 {:label "assisted-verify"  :writes #{:unit/intake :type-rules/verify :ndt/screen
+                                          :robotics/simulate-fastener-qualification-cell}        :auto #{}}
    3 {:label "supervised-auto"  :writes write-ops
       :auto #{:unit/intake}}})
 

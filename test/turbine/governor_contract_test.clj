@@ -44,6 +44,20 @@
   (exec-op actor (str tid-prefix "-screen") {:op :ndt/screen :subject subject} operator)
   (approve! actor (str tid-prefix "-screen")))
 
+(defn- simulate-robotics!
+  "Walks `subject` through the robot rod-bolt/head-bolt fastener-
+  qualification mission -> approve, leaving `:robotics-sim-verified?`
+  on file (ADR-2607999500). Only meaningful to call for a unit whose
+  REAL `physics-2d`-simulated bolt tensile proof-load telemetry
+  (`:sim-proof-load-force`) is actually within tolerance -- an out-of-
+  tolerance unit still gets :robotics-sim-verified? recorded (per
+  whatever the mission itself found), but `turbine.governor`'s
+  independent recheck HARD-holds regardless (see
+  `robotics-simulation-out-of-tolerance-is-held`)."
+  [actor tid-prefix subject]
+  (exec-op actor (str tid-prefix "-robotics") {:op :robotics/simulate-fastener-qualification-cell :subject subject} operator)
+  (approve! actor (str tid-prefix "-robotics")))
+
 (deftest clean-intake-auto-commits
   (let [[db actor] (fresh)
         res (exec-op actor "t1"
@@ -82,6 +96,7 @@
   (testing "a unit whose own dimensional tolerance falls outside its own spec bounds -> HOLD"
     (let [[db actor] (fresh)
           _ (verify! actor "t5pre" "unit-3")
+          _ (simulate-robotics! actor "t5pre2" "unit-3")
           res (exec-op actor "t5" {:op :actuation/dispatch-unit :subject "unit-3"} operator)]
       (is (= :hold (get-in res [:state :disposition])))
       (is (some #{:unit-tolerance-out-of-range} (-> (store/ledger db) last :basis)))
@@ -100,6 +115,7 @@
   (testing "a clean, fully-verified, in-spec unit still ALWAYS interrupts for human approval -- actuation/dispatch-unit is never auto"
     (let [[db actor] (fresh)
           _ (verify! actor "t7pre" "unit-1")
+          _ (simulate-robotics! actor "t7pre2" "unit-1")
           r1 (exec-op actor "t7" {:op :actuation/dispatch-unit :subject "unit-1"} operator)]
       (is (= :interrupted (:status r1)) "pauses for human approval even when governor-clean")
       (testing "approve -> commit, dispatch record drafted"
@@ -125,6 +141,7 @@
   (testing "dispatching the same unit's action twice -> HOLD on the second attempt"
     (let [[db actor] (fresh)
           _ (verify! actor "t9pre" "unit-1")
+          _ (simulate-robotics! actor "t9pre2" "unit-1")
           _ (exec-op actor "t9a" {:op :actuation/dispatch-unit :subject "unit-1"} operator)
           _ (approve! actor "t9a")
           res (exec-op actor "t9" {:op :actuation/dispatch-unit :subject "unit-1"} operator)]
@@ -143,6 +160,33 @@
       (is (= :hold (get-in res [:state :disposition])))
       (is (some #{:already-certified} (-> (store/ledger db) last :basis)))
       (is (= 1 (count (store/evidence-history db))) "still only the one earlier evidence issuance"))))
+
+(deftest robotics-simulation-always-needs-approval
+  (testing "robotics/simulate-fastener-qualification-cell is never in any phase's :auto set -- always human approval, even when clean"
+    (let [[db actor] (fresh)
+          res (exec-op actor "t11" {:op :robotics/simulate-fastener-qualification-cell :subject "unit-1"} operator)]
+      (is (= :interrupted (:status res)))
+      (let [r2 (approve! actor "t11")]
+        (is (= :commit (get-in r2 [:state :disposition])))
+        (is (true? (:robotics-sim-verified? (store/unit db "unit-1"))))))))
+
+(deftest dispatch-assembly-without-robotics-simulation-is-held
+  (testing "actuation/dispatch-unit before the robot rod-bolt/head-bolt fastener-qualification mission ever ran -> HOLD (robotics-simulation-missing)"
+    (let [[db actor] (fresh)
+          _ (verify! actor "t12pre" "unit-1")
+          res (exec-op actor "t12" {:op :actuation/dispatch-unit :subject "unit-1"} operator)]
+      (is (= :hold (get-in res [:state :disposition])))
+      (is (some #{:robotics-simulation-missing} (-> (store/ledger db) last :basis)))
+      (is (empty? (store/dispatch-history db))))))
+
+(deftest robotics-simulation-out-of-tolerance-is-held
+  (testing "unit-5 has a robotics-sim already on file, but its own REAL physics-2d-simulated bolt tensile proof-load reading falls below the minimum required floor on INDEPENDENT recheck -> HOLD, never trusts the on-file verdict alone"
+    (let [[db actor] (fresh)
+          _ (verify! actor "t13pre" "unit-5")
+          res (exec-op actor "t13" {:op :actuation/dispatch-unit :subject "unit-5"} operator)]
+      (is (= :hold (get-in res [:state :disposition])))
+      (is (some #{:robotics-simulation-out-of-tolerance} (-> (store/ledger db) last :basis)))
+      (is (empty? (store/dispatch-history db))))))
 
 (deftest every-decision-leaves-one-ledger-fact
   (testing "write-only-through-ledger: N operations -> N ledger facts"

@@ -1,21 +1,25 @@
 (ns turbine.sim
   "Demo driver -- `clojure -M:dev:run`. Walks a clea unit through
-  intake -> requirements verification -> NDT-defect screening ->
+  intake -> requirements verification -> NDT-defect screening -> robot
+  rod-bolt/head-bolt fastener-qualification mission (ADR-2607999500) ->
   block-dispatch proposal (always escalates) -> human approval ->
   commit, then through type-evidence proposal (always
-  escalates) -> human approval -> commit, then shows five HARD holds
-  (a jurisdiction with no spec-basis, an out-of-spec assembly
-  tolerance, an unresolved NDT defect screened directly via `:ndt/
-  screen` [never via an actuation op against an unscreened unit --
-  see this actor's own governor ns docstring / the lesson
-  `parksafety`'s ADR-2607071922 Decision 5, `eldercare`'s, `museum`'s,
-  `conservation`'s, `salon`'s, `entertainment`'s, `casework`'s,
-  `hospital`'s, `facility`'s, `school`'s, `association`'s, `leasing`'s,
-  `behavioral`'s, `secondary`'s, `card`'s, `water`'s and `telecom`'s
-  ADR-0001s already recorded], and a double block-dispatch/
-  type-evidence-issuance of an already-processed unit)
-  that never reach a human at all, and prints the audit ledger + the
-  draft block-dispatch and type-evidence records."
+  escalates) -> human approval -> commit, then shows every HARD hold
+  this actor defends against (a jurisdiction with no spec-basis, an
+  actuation attempted before the robot fastener-qualification mission
+  ever ran, an out-of-spec assembly tolerance, a robotics mission on
+  file whose independent recheck disagrees, an unresolved NDT defect
+  screened directly via `:ndt/screen` [never via an actuation op
+  against an unscreened unit -- see this actor's own governor ns
+  docstring / the lesson `parksafety`'s ADR-2607071922 Decision 5,
+  `eldercare`'s, `museum`'s, `conservation`'s, `salon`'s,
+  `entertainment`'s, `casework`'s, `hospital`'s, `facility`'s,
+  `school`'s, `association`'s, `leasing`'s, `behavioral`'s,
+  `secondary`'s, `card`'s, `water`'s and `telecom`'s ADR-0001s already
+  recorded], and a double block-dispatch/type-evidence-issuance of an
+  already-processed unit) that never reach a human at all, and prints
+  the audit ledger + the draft block-dispatch and type-evidence
+  records."
   (:require [langgraph.graph :as g]
             [turbine.export :as export]
             [turbine.store :as store]
@@ -44,6 +48,10 @@
     (println (exec! actor "t3" {:op :ndt/screen :subject "unit-1"} operator))
     (println (approve! actor "t3"))
 
+    (println "== robotics/simulate-fastener-qualification-cell unit-1 (robot rod-bolt/head-bolt tensile proof-load mission; escalates -- human approves) ==")
+    (println (exec! actor "t3b" {:op :robotics/simulate-fastener-qualification-cell :subject "unit-1"} operator))
+    (println (approve! actor "t3b"))
+
     (println "== actuation/dispatch-unit unit-1 (always escalates -- actuation/dispatch-unit) ==")
     (let [r (exec! actor "t4" {:op :actuation/dispatch-unit :subject "unit-1"} operator)]
       (println r)
@@ -63,8 +71,20 @@
     (println (exec! actor "t7" {:op :type-rules/verify :subject "unit-3"} operator))
     (println (approve! actor "t7"))
 
+    (println "== actuation/dispatch-unit unit-3 before robotics simulation -> HARD hold (robotics-simulation-missing) ==")
+    (println (exec! actor "t7b" {:op :actuation/dispatch-unit :subject "unit-3"} operator))
+
+    (println "== robotics/simulate-fastener-qualification-cell unit-3 (real physics-2d bolt proof-load pull-test clears the floor; escalates -- human approves) ==")
+    (println (exec! actor "t7c" {:op :robotics/simulate-fastener-qualification-cell :subject "unit-3"} operator))
+    (println (approve! actor "t7c"))
+
     (println "== actuation/dispatch-unit unit-3 (0.35 outside [-0.10,0.10] tolerance -> HARD hold) ==")
     (println (exec! actor "t8" {:op :actuation/dispatch-unit :subject "unit-3"} operator))
+
+    (println "== actuation/dispatch-unit unit-5 (robotics-sim on file, but real physics-2d-simulated bolt proof load falls below the minimum required floor on independent recheck -> HARD hold) ==")
+    (println (exec! actor "t8b" {:op :type-rules/verify :subject "unit-5"} operator))
+    (println (approve! actor "t8b"))
+    (println (exec! actor "t8c" {:op :actuation/dispatch-unit :subject "unit-5"} operator))
 
     (println "== ndt/screen unit-4 (unresolved -> HARD hold, never reaches a human) ==")
     (println (exec! actor "t9" {:op :ndt/screen :subject "unit-4"} operator))
