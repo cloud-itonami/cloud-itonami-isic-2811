@@ -22,9 +22,16 @@
       (is (false? (:ndt-defect-unresolved? (store/unit s "unit-1"))))
       (is (= 0.35 (:dimensional-tolerance-actual (store/unit s "unit-3"))))
       (is (true? (:ndt-defect-unresolved? (store/unit s "unit-4"))))
+      (is (false? (:robotics-sim-verified? (store/unit s "unit-1"))) "no robotics mission has run yet")
+      (is (true? (:robotics-sim-verified? (store/unit s "unit-5"))) "seeded as already-on-file")
+      (is (= 1.5 (:rod-bolt-mass-kg (store/unit s "unit-5"))))
+      (is (< (:sim-proof-load-force (store/unit s "unit-5")) 32000.0)
+          "unit-5's real physics-2d-simulated bolt proof load falls below the minimum floor")
+      (is (> (:sim-proof-load-force (store/unit s "unit-1")) 32000.0)
+          "unit-1's real physics-2d-simulated bolt proof load clears the minimum floor")
       (is (false? (:unit-dispatched? (store/unit s "unit-1"))))
       (is (false? (:type-certified? (store/unit s "unit-1"))))
-      (is (= ["unit-1" "unit-2" "unit-3" "unit-4"]
+      (is (= ["unit-1" "unit-2" "unit-3" "unit-4" "unit-5"]
              (mapv :id (store/all-units s))))
       (is (nil? (store/ndt-screen-of s "unit-1")))
       (is (nil? (store/requirements-verification-of s "unit-1")))
@@ -44,6 +51,13 @@
                                  :value {:id "unit-1" :unit-name "Sakura Double-Bottom Unit DB-04"}})
         (is (= "Sakura Double-Bottom Unit DB-04" (:unit-name (store/unit s "unit-1"))))
         (is (= 0.05 (:dimensional-tolerance-actual (store/unit s "unit-1"))) "unrelated field preserved"))
+      (testing "robotics-sim result commits via :unit/upsert and reads back"
+        (store/commit-record! s {:effect :unit/upsert
+                                 :value {:id "unit-1" :robotics-sim-verified? true
+                                        :robotics-sim-record {:mission-id "m-1" :passed? true}}})
+        (is (true? (:robotics-sim-verified? (store/unit s "unit-1"))))
+        (is (= {:mission-id "m-1" :passed? true} (:robotics-sim-record (store/unit s "unit-1"))))
+        (is (= 0.05 (:dimensional-tolerance-actual (store/unit s "unit-1"))) "unrelated field still preserved"))
       (testing "verification / NDT-screen payloads commit and read back"
         (store/commit-record! s {:effect :verification/set :path ["unit-1"]
                                  :payload {:jurisdiction "JPN" :checklist ["a" "b"]}})
