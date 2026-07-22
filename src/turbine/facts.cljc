@@ -44,6 +44,43 @@
           :required-evidence ["CAE-Simulationsbericht (CAE-simulation-report)"
                               "CFD-Verifizierungsbericht (CFD-verification-report)"
                               "ZfP-Rückverfolgbarkeitsnachweis (NDT-chain-of-custody-record)"
+                              "Werkstoffzertifikat (material-certification-record)"]}
+   ;; CH is not an EU member but mirrors EU machinery/pressure-equipment
+   ;; directives via its own ordinances (bilateral-agreement equivalence,
+   ;; not automatic EU-law adoption). Verified 2026-07-22 by fetching:
+   ;;  - https://www.seco.admin.ch/de/maschinen (SECO, live) -- names SECO
+   ;;    itself as owner authority, cites "Maschinenverordnung, MaschV,
+   ;;    SR 819.14" as implementing 2006/42/EG, and names Suva as the
+   ;;    market-control body for the operational/industrial domain.
+   ;;  - the actual consolidated MaschV text (SR 819.14, fedlex.admin.ch
+   ;;    /eli/cc/2008/263/de, Stand am 20. Januar 2024): Art. 1 para. 1-2
+   ;;    ("Diese Verordnung regelt das Inverkehrbringen und die
+   ;;    Marktueberwachung betreffend Maschinen nach der Richtlinie
+   ;;    2006/42/EG"; scope follows Art. 1 of the EU directive), Art. 3
+   ;;    ("Das Staatssekretariat fuer Wirtschaft (SECO) bezeichnet die
+   ;;    technischen Normen..."), Art. 5 (Marktueberwachung).
+   ;;  - https://www.seco.admin.ch/de/druckgeraete-einfache-druckbehaelter
+   ;;    (SECO, live) -- names "Verordnung vom 25. November 2015 ueber die
+   ;;    Sicherheit von Druckgeraeten (Druckgeraeteverordnung, DGV, SR
+   ;;    930.114)" as implementing EU PED 2014/68/EU, and SVTI as the
+   ;;    market-control body for pressure equipment.
+   ;; Honesty gap: unlike MaschV, the DGV/DBV article-level text was not
+   ;; independently fetched this session (only the SECO summary page,
+   ;; which itself names the SR number/date/EU-directive equivalence) --
+   ;; so DGV is cited at the same "(reference)" confidence level the DEU
+   ;; entry above already uses for PED, not as a fetched article
+   ;; citation. No claim is made that "turbine" is a term appearing
+   ;; verbatim in MaschV/DGV text (it is not verified either way) -- the
+   ;; national-spec below states general machinery/pressure-equipment
+   ;; scope, same as the other three jurisdictions' entries.
+   "CHE" {:name "Switzerland"
+          :owner-authority "SECO (Staatssekretariat für Wirtschaft) / Suva / SVTI — Maschinen- und Druckgeräte-Marktüberwachung"
+          :legal-basis "Maschinenverordnung (MaschV) SR 819.14 vom 2. April 2008, Art. 1/3/5 (setzt EU-Maschinenrichtlinie 2006/42/EG gleichwertig ins Schweizer Recht um) / Druckgeräteverordnung (DGV) SR 930.114 vom 25. November 2015 (setzt EU-Druckgeräterichtlinie 2014/68/EU gleichwertig um, reference)"
+          :national-spec "CH industrial engine/turbine placing-on-market and market-surveillance requirements (machinery + pressure-equipment scope)"
+          :provenance "https://www.seco.admin.ch/de/maschinen"
+          :required-evidence ["CAE-Simulationsbericht (CAE-simulation-report)"
+                              "CFD-Verifizierungsbericht (CFD-verification-report)"
+                              "ZfP-Rückverfolgbarkeitsnachweis (NDT-chain-of-custody-record)"
                               "Werkstoffzertifikat (material-certification-record)"]}})
 
 (defn spec-basis [iso3] (get catalog iso3))
