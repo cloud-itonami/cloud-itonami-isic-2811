@@ -31,7 +31,12 @@
         ;; use.
         io.github.kotoba-lang/physics-2d
         {:git/url "https://github.com/kotoba-lang/physics-2d.git"
-         :sha "03b6c23c8d9aa36b92a8130fd3e37fc2548b4d26"}}
+         :sha "03b6c23c8d9aa36b92a8130fd3e37fc2548b4d26"}
+        ;; langchain-store: the shared langchain.db store seam (EDN-blob
+        ;; codec + identity schema + event-log helpers) that ~190 actors
+        ;; hand-roll; turbine.store is an adopter (ADR-2607141600).
+        io.github.kotoba-lang/langchain-store
+        {:local/root "../../kotoba-lang/langchain-store"}}
  :aliases
  {;; offline workspace dev -- pin transitive langchain to local checkout
   :dev {:override-deps
