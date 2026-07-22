@@ -34,11 +34,10 @@
   immutable log -- the audit trail a community trusting an turbine plant
   manufacturer needs, and the evidence a manufacturer needs if a
   dispatch or type-evidence decision is later disputed."
-  (:require #?(:clj  [clojure.edn :as edn]
-               :cljs [cljs.reader :as edn])
-            [turbine.registry :as registry]
+  (:require [turbine.registry :as registry]
             [turbine.robotics :as robotics]
-            [langchain.db :as d]))
+            [langchain.db :as d]
+            [langchain-store.core :as ls]))
 
 (defprotocol Store
   (unit [s id])
@@ -230,18 +229,14 @@
   Map/compound values (verification/NDT-screen payloads, ledger facts,
   dispatch/evidence records) are stored as EDN strings so `langchain.
   db` doesn't expand them into sub-entities -- the same convention
-  every sibling actor's store uses."
-  {:unit/id                       {:db/unique :db.unique/identity}
-   :verification/unit-id          {:db/unique :db.unique/identity}
-   :ndt-screen/unit-id            {:db/unique :db.unique/identity}
-   :ledger/seq                        {:db/unique :db.unique/identity}
-   :dispatch/seq                      {:db/unique :db.unique/identity}
-   :evidence/seq                      {:db/unique :db.unique/identity}
-   :dispatch-sequence/jurisdiction    {:db/unique :db.unique/identity}
-   :evidence-sequence/jurisdiction    {:db/unique :db.unique/identity}})
-
-(defn- enc [v] (pr-str v))
-(defn- dec* [s] (when s (edn/read-string s)))
+  every sibling actor's store uses. The identity-schema builder,
+  EDN-blob codec and seq-keyed event-log read/append are the shared
+  kotoba-lang/langchain-store machinery (ADR-2607141600) -- the seam
+  ~190 actors hand-roll; this store keeps only its domain wiring."
+  (ls/identity-schema
+   [:unit/id :verification/unit-id :ndt-screen/unit-id
+    :ledger/seq :dispatch/seq :evidence/seq
+    :dispatch-sequence/jurisdiction :evidence-sequence/jurisdiction]))
 
 (defn- block->tx [{:keys [id unit-name dimensional-tolerance-actual dimensional-tolerance-min dimensional-tolerance-max
                              rod-bolt-mass-kg sim-proof-load-force sim-peak-decel-mps2
@@ -258,7 +253,7 @@
     (some? sim-peak-decel-mps2)                 (assoc :unit/sim-peak-decel-mps2 sim-peak-decel-mps2)
     (some? ndt-defect-unresolved?)              (assoc :unit/ndt-defect-unresolved? ndt-defect-unresolved?)
     (some? robotics-sim-verified?)              (assoc :unit/robotics-sim-verified? robotics-sim-verified?)
-    (some? robotics-sim-record)                 (assoc :unit/robotics-sim-record (enc robotics-sim-record))
+    (some? robotics-sim-record)                 (assoc :unit/robotics-sim-record (ls/enc robotics-sim-record))
     (some? unit-dispatched?)                (assoc :unit/unit-dispatched? unit-dispatched?)
     (some? type-certified?)            (assoc :unit/type-certified? type-certified?)
     jurisdiction                                (assoc :unit/jurisdiction jurisdiction)
@@ -285,7 +280,7 @@
      :sim-peak-decel-mps2 (:unit/sim-peak-decel-mps2 m)
      :ndt-defect-unresolved? (boolean (:unit/ndt-defect-unresolved? m))
      :robotics-sim-verified? (boolean (:unit/robotics-sim-verified? m))
-     :robotics-sim-record (dec* (:unit/robotics-sim-record m))
+     :robotics-sim-record (ls/dec* (:unit/robotics-sim-record m))
      :unit-dispatched? (boolean (:unit/unit-dispatched? m))
      :type-certified? (boolean (:unit/type-certified? m))
      :jurisdiction (:unit/jurisdiction m) :status (:unit/status m)
@@ -300,25 +295,16 @@
          (map #(pull->unit (d/pull (d/db conn) block-pull [:unit/id %])))
          (sort-by :id)))
   (ndt-screen-of [_ id]
-    (dec* (d/q '[:find ?p . :in $ ?aid
+    (ls/dec* (d/q '[:find ?p . :in $ ?aid
                 :where [?k :ndt-screen/unit-id ?aid] [?k :ndt-screen/payload ?p]]
               (d/db conn) id)))
   (requirements-verification-of [_ unit-id]
-    (dec* (d/q '[:find ?p . :in $ ?aid
+    (ls/dec* (d/q '[:find ?p . :in $ ?aid
                 :where [?a :verification/unit-id ?aid] [?a :verification/payload ?p]]
               (d/db conn) unit-id)))
-  (ledger [_]
-    (->> (d/q '[:find ?s ?f :where [?e :ledger/seq ?s] [?e :ledger/fact ?f]] (d/db conn))
-         (sort-by first)
-         (mapv (comp dec* second))))
-  (dispatch-history [_]
-    (->> (d/q '[:find ?s ?r :where [?e :dispatch/seq ?s] [?e :dispatch/record ?r]] (d/db conn))
-         (sort-by first)
-         (mapv (comp dec* second))))
-  (evidence-history [_]
-    (->> (d/q '[:find ?s ?r :where [?e :evidence/seq ?s] [?e :evidence/record ?r]] (d/db conn))
-         (sort-by first)
-         (mapv (comp dec* second))))
+  (ledger [_] (ls/read-stream conn :ledger/seq :ledger/fact))
+  (dispatch-history [_] (ls/read-stream conn :dispatch/seq :dispatch/record))
+  (evidence-history [_] (ls/read-stream conn :evidence/seq :evidence/record))
   (next-dispatch-sequence [_ jurisdiction]
     (or (d/q '[:find ?n . :in $ ?j
               :where [?e :dispatch-sequence/jurisdiction ?j] [?e :dispatch-sequence/next ?n]]
@@ -339,10 +325,10 @@
       (d/transact! conn [(block->tx value)])
 
       :verification/set
-      (d/transact! conn [{:verification/unit-id (first path) :verification/payload (enc payload)}])
+      (d/transact! conn [{:verification/unit-id (first path) :verification/payload (ls/enc payload)}])
 
       :ndt-screen/set
-      (d/transact! conn [{:ndt-screen/unit-id (first path) :ndt-screen/payload (enc payload)}])
+      (d/transact! conn [{:ndt-screen/unit-id (first path) :ndt-screen/payload (ls/enc payload)}])
 
       :unit/mark-dispatched
       (let [unit-id (first path)
@@ -352,7 +338,7 @@
         (d/transact! conn
                      [(block->tx (assoc unit-patch :id unit-id))
                       {:dispatch-sequence/jurisdiction jurisdiction :dispatch-sequence/next next-n}
-                      {:dispatch/seq (count (dispatch-history s)) :dispatch/record (enc (get result "record"))}])
+                      {:dispatch/seq (count (dispatch-history s)) :dispatch/record (ls/enc (get result "record"))}])
         result)
 
       :unit/mark-certified
@@ -363,12 +349,12 @@
         (d/transact! conn
                      [(block->tx (assoc unit-patch :id unit-id))
                       {:evidence-sequence/jurisdiction jurisdiction :evidence-sequence/next next-n}
-                      {:evidence/seq (count (evidence-history s)) :evidence/record (enc (get result "record"))}])
+                      {:evidence/seq (count (evidence-history s)) :evidence/record (ls/enc (get result "record"))}])
         result)
       nil)
     s)
   (append-ledger! [s fact]
-    (d/transact! conn [{:ledger/seq (count (ledger s)) :ledger/fact (enc fact)}])
+    (ls/append-blob! conn :ledger/seq :ledger/fact (count (ledger s)) fact)
     fact)
   (with-units [s units]
     (when (seq units) (d/transact! conn (mapv block->tx (vals units)))) s))
