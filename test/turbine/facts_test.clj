@@ -60,3 +60,25 @@
     (is (seq all))
     (is (facts/required-evidence-satisfied? "IND" all))
     (is (not (facts/required-evidence-satisfied? "IND" (rest all))))))
+
+(deftest zaf-has-a-spec-basis
+  (let [basis (facts/spec-basis "ZAF")]
+    (is (some? basis))
+    (is (string? (:provenance basis)))
+    (is (re-find #"Department of Employment and Labour" (:owner-authority basis)))
+    (is (re-find #"Pressure Equipment Regulations, 2009" (:legal-basis basis))
+        "cites the real Pressure Equipment Regulations, 2009, not the unverified 2004 lead")
+    (is (re-find #"Occupational Health and Safety Act 85 of 1993" (:legal-basis basis))
+        "cites the real parent Act")))
+
+(deftest coverage-includes-zaf-as-a-covered-jurisdiction
+  (let [report (facts/coverage ["ZAF" "ATL"])]
+    (is (= 1 (:covered report)))
+    (is (= ["ZAF"] (:covered-jurisdictions report)))
+    (is (= ["ATL"] (:missing-jurisdictions report)))))
+
+(deftest zaf-required-evidence-satisfied-needs-every-item
+  (let [all (facts/evidence-checklist "ZAF")]
+    (is (seq all))
+    (is (facts/required-evidence-satisfied? "ZAF" all))
+    (is (not (facts/required-evidence-satisfied? "ZAF" (rest all))))))
