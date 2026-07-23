@@ -141,6 +141,127 @@
           :required-evidence ["CAE-simulation-report"
                               "CFD-verification-report"
                               "NDT-chain-of-custody-record"
+                              "Material-certification-record"]}
+   ;; ZAF was seeded 2026-07-23 by fetching three separate official South
+   ;; African government documents this session (not summaries):
+   ;;  - https://www.gov.za/sites/default/files/gcis_document/201409/act85of1993.pdf
+   ;;    (the Occupational Health and Safety Act 85 of 1993 itself,
+   ;;    downloaded and run through `pdftotext` this session -- confirmed
+   ;;    s.43(1)(b)(ii) empowers the Minister to make regulations on "the
+   ;;    design, manufacture, construction, installation, operation, use,
+   ;;    handling, alteration, repair, maintenance or conveyance of plant,
+   ;;    machinery or health and safety equipment" and s.43(1)(b)(xii) on
+   ;;    "the accreditation, functions, duties and activities of approved
+   ;;    inspection authorities"; s.44(1) separately empowers the Minister
+   ;;    to incorporate a health and safety standard into the regulations
+   ;;    "by mere reference to the number, title and year of issue of that
+   ;;    health and safety standard").
+   ;;  - https://www.gov.za/sites/default/files/gcis_document/201711/41256gon1265.pdf
+   ;;    (Department of Labour, "Guidance Notes to the Pressure Equipment
+   ;;    Regulations July 2009", Revision 2, Government Gazette No. 41256,
+   ;;    17 November 2017 -- an official DoL publication that reproduces
+   ;;    the actual regulation text alongside DoL's own explanatory notes;
+   ;;    downloaded and run through `pdftotext` this session). Confirmed
+   ;;    text read directly:
+   ;;      "REGULATIONS 22 - SHORT TITLE: These Regulations shall be called
+   ;;      the Pressure Equipment Regulations, 2009, and shall come into
+   ;;      effect on 1 October 2009: Provided that approved inspection
+   ;;      authority for in-service inspections shall come into effect on
+   ;;      1 April 2011 on condition that the inspection shall be carried
+   ;;      out by an authorised person."
+   ;;      "REGULATIONS 21 - REPEAL OF REGULATIONS AND ANNEXURE: The
+   ;;      Vessels under Pressure Regulations, 1996, published under
+   ;;      Government Notice No. R. 1591, dated 4 October 1996, is hereby
+   ;;      repealed."
+   ;;      "REGULATION 2 - SCOPE OF APPLICATION (1) These Regulations
+   ;;      shall apply to the design, manufacture, operation, repair,
+   ;;      modification, maintenance, inspection and testing of pressure
+   ;;      equipment with a design pressure equal to or greater than 50
+   ;;      kPa, in terms of the relevant health and safety standard
+   ;;      incorporated into these Regulations under section 44 of the
+   ;;      Act."
+   ;;      "REGULATION 7 - APPROVAL AND DUTIES OF APPROVED INSPECTION
+   ;;      AUTHORITY (1) Only an organisation holding an approval
+   ;;      certificate from the chief inspector shall perform the duties
+   ;;      of an approved inspection authority within the scope of
+   ;;      accreditation ... (3)(a) of inspection bodies operating in the
+   ;;      Republic shall be subject to the submission of an accreditation
+   ;;      certificate issued by the accreditation authority in accordance
+   ;;      with the requirements of SANS/ISO 17020 and SANS 10227 ... (4)
+   ;;      Imported pressure equipment stamped by an ASME authorised
+   ;;      manufacturer in compliance with the full ASME Code of
+   ;;      Construction shall be deemed to meet the requirements of these
+   ;;      Regulation."
+   ;;      "'SANS 347' means the Standard Specification for categorisation
+   ;;      and conformity assessment criteria for all pressure equipment,
+   ;;      SANS 347, published by the South African Bureau of Standards."
+   ;;  - https://www.gov.za/sites/default/files/gcis_document/201409/34995rg9672gon79.pdf
+   ;;    (Department of Labour, Government Notice No. R.79, Government
+   ;;    Gazette No. 34995, 3 February 2012, "Incorporation of Health and
+   ;;    Safety Standards into the Pressure Equipment Regulations, 2009",
+   ;;    signed by M N Oliphant, Minister of Labour, under s.44 of the OHS
+   ;;    Act -- confirmed text read directly: the Schedule incorporates
+   ;;    "SANS 347: Categorization and conformity assessment criteria for
+   ;;    all pressure equipment" and "SANS 10227: Criteria for the
+   ;;    operation of inspection authorities performing inspections in
+   ;;    terms of the Pressure Equipment Regulations").
+   ;; Lead correction: the task lead named "Pressure Equipment Regulations
+   ;; (2004)" -- that year is not correct for the operative regulation. A
+   ;; 17 September 2004 Government Gazette document (No. 26794, GN R.1088)
+   ;; found and fetched this session is explicitly headed "NOTICE OF DRAFT
+   ;; AMENDMENT" and invited 60 days of public comment on a proposed
+   ;; repeal-and-replace of the Vessels under Pressure Regulations, 1996;
+   ;; it was never verified as promulgated text and does not mention SANS
+   ;; 347 anywhere. Both officially-dated DoL documents actually fetched
+   ;; and read this session (the 2012 incorporation notice and the 2017
+   ;; guidance notes) consistently and repeatedly call the regulation now
+   ;; in force the "Pressure Equipment Regulations, 2009" (short title,
+   ;; Regulation 22), in effect from 1 October 2009. This entry cites
+   ;; 2009, not 2004, because that is what the two documents actually
+   ;; fetched this session say -- not the un-independently-verified lead.
+   ;; Honesty gap: the original July 2009 promulgating Government Notice
+   ;; itself was not independently located and fetched this session --
+   ;; gov.za's own site-search endpoints returned 404, and further lookups
+   ;; hit a DuckDuckGo/Bing bot-detection challenge that, per this
+   ;; session's hard safety rule, was not bypassed. The regulation text
+   ;; quoted above (Regulations 2, 7, 21, 22) is instead sourced from the
+   ;; Department of Labour's own official Guidance Notes gazette (GG
+   ;; 41256), which reproduces the regulation text verbatim alongside
+   ;; DoL's interpretive notes, corroborated by the 2012 SANS-347-
+   ;; incorporation notice (GG 34995) -- both fetched and read directly,
+   ;; neither a secondary summary.
+   ;; Turbine-scope disclosure (materially different from the other six
+   ;; entries' adjacency-only gap): unlike JPN/USA/GBR/DEU/CHE/IND, the
+   ;; word "turbine" DOES appear verbatim in the Pressure Equipment
+   ;; Regulations, 2009 text -- but as an explicit SCOPE EXCLUSION, not an
+   ;; inclusion. Regulation 2(3)(d) excludes "pressure equipment
+   ;; comprising casings or machinery where the dimensioning, choice of
+   ;; material and manufacturing rules are based primarily on requirements
+   ;; for sufficient strength, rigidity and stability ... and for which
+   ;; pressure is not a significant design factor, and such pressure
+   ;; equipment may include -- (i) engines, including turbines and
+   ;; internal combustion engines; (ii) reciprocating steam engines, gas
+   ;; turbines, steam turbines, turbo-generators, compressor engines,
+   ;; pumps and actuating devices". So a turbine's own casing/rotor is
+   ;; expressly carved OUT of PER scope (mirroring how the EU PED that
+   ;; CHE/DEU already cite in "(reference)" mode treats rotating machinery
+   ;; where pressure is not the primary hazard) -- coverage here rests on
+   ;; the same steam-generator/pressure-vessel adjacency the other six
+   ;; entries already use (a turbine plant's steam generator/boiler and
+   ;; pressure piping remain squarely in PER scope even though the turbine
+   ;; itself is named only to be excluded), not on direct turbine
+   ;; inclusion. No South African "machinery-safety" regulation analogous
+   ;; to the EU Machinery Directive/UK Supply of Machinery (Safety)
+   ;; Regulations that might cover the excluded turbine casing directly
+   ;; was located or verified this session.
+   "ZAF" {:name "South Africa"
+          :owner-authority "Department of Employment and Labour, Chief Inspector of Occupational Health and Safety (Pressure Equipment Regulations, 2009, reg. 7: approval of Approved Inspection Authorities) / South African National Accreditation System (SANAS, in-service AIA accreditation per reg. 22 proviso)"
+          :legal-basis "Occupational Health and Safety Act 85 of 1993, s.43 (regulation-making power over design/manufacture/construction/installation/operation/maintenance of plant and machinery, and over accreditation of approved inspection authorities) and s.44 (incorporation of health and safety standards by Gazette notice) -- Pressure Equipment Regulations, 2009 (short title, reg. 22; in effect 1 October 2009, in-service AIA accreditation from 1 April 2011), repealing the Vessels under Pressure Regulations, 1996 (GN R.1591, 4 October 1996); SANS 347 and SANS 10227 incorporated into the Regulations under s.44 by GN R.79, Government Gazette No. 34995, 3 February 2012"
+          :national-spec "South African pressure-equipment (steam generator / pressure vessel / piping / pressure and safety accessory) design, manufacture, operation, repair, modification, maintenance, inspection and testing requirements for equipment with design pressure equal to or greater than 50 kPa (reg. 2(1)), SANS 347 categorisation/conformity-assessment, and Chief-Inspector-approved Approved Inspection Authority (AIA) accreditation to SANS/ISO 17020 + SANS 10227 (reg. 7) -- the same steam-generator/pressure-vessel adjacency the JPN/USA/GBR/DEU/CHE/IND entries above already use for turbine coverage. Unlike those six, reg. 2(3)(d) NAMES turbines verbatim but only as an express scope EXCLUSION (turbine casings/rotating machinery where pressure is not the primary design factor), so the turbine itself is carved out of PER while the upstream steam-generator/boiler and pressure piping of a turbine plant remain in scope on the same adjacency logic; reg. 7(4) separately deems ASME-stamped imported pressure equipment compliant"
+          :provenance "https://www.gov.za/sites/default/files/gcis_document/201409/act85of1993.pdf"
+          :required-evidence ["CAE-simulation-report"
+                              "CFD-verification-report"
+                              "NDT-chain-of-custody-record"
                               "Material-certification-record"]}})
 
 (defn spec-basis [iso3] (get catalog iso3))

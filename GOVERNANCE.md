@@ -1,11 +1,11 @@
 # Governance
 
-`cloud-itonami-3030` is an OSS open-business blueprint for aircraft and aerospace manufacturing enablement, robotics-premised.
+`cloud-itonami-isic-2811` is an OSS open-business blueprint for engine/turbine manufacturing enablement (ISIC Rev.5 2811), robotics-premised.
 
 ## Maintainers
 Maintainers may merge changes that preserve these invariants:
 - a robot action the governor refuses is never dispatched to hardware.
-- the Aerospace Manufacturing Governor remains independent of the advisor.
+- the Turbine Governor remains independent of the advisor.
 - hard policy violations (force-dispatch, record-suppression, unauthorized disclosure) cannot be overridden by human approval.
 - every dispatch, sign-off, record and disclose path is auditable.
 - sensitive operating and personal data stays outside Git.
