@@ -40,3 +40,23 @@
     (is (seq all))
     (is (facts/required-evidence-satisfied? "CHE" all))
     (is (not (facts/required-evidence-satisfied? "CHE" (rest all))))))
+
+(deftest ind-has-a-spec-basis
+  (let [basis (facts/spec-basis "IND")]
+    (is (some? basis))
+    (is (string? (:provenance basis)))
+    (is (re-find #"Central Boilers Board" (:owner-authority basis)))
+    (is (re-find #"Boilers Act, 2025" (:legal-basis basis)) "cites the real Boilers Act, 2025, not a placeholder")
+    (is (re-find #"Act No\. 12 of 2025" (:legal-basis basis)) "cites the real Act No. 12 of 2025")))
+
+(deftest coverage-includes-ind-as-a-covered-jurisdiction
+  (let [report (facts/coverage ["IND" "ATL"])]
+    (is (= 1 (:covered report)))
+    (is (= ["IND"] (:covered-jurisdictions report)))
+    (is (= ["ATL"] (:missing-jurisdictions report)))))
+
+(deftest ind-required-evidence-satisfied-needs-every-item
+  (let [all (facts/evidence-checklist "IND")]
+    (is (seq all))
+    (is (facts/required-evidence-satisfied? "IND" all))
+    (is (not (facts/required-evidence-satisfied? "IND" (rest all))))))
