@@ -81,7 +81,67 @@
           :required-evidence ["CAE-Simulationsbericht (CAE-simulation-report)"
                               "CFD-Verifizierungsbericht (CFD-verification-report)"
                               "ZfP-Rückverfolgbarkeitsnachweis (NDT-chain-of-custody-record)"
-                              "Werkstoffzertifikat (material-certification-record)"]}})
+                              "Werkstoffzertifikat (material-certification-record)"]}
+   ;; IND was seeded 2026-07-23 by fetching the actual central Act text
+   ;; (not a summary page) from India's official legislative database:
+   ;;  - https://www.indiacode.nic.in/handle/123456789/21395 (metadata
+   ;;    record: Act ID A2025-12, Act Number 12, Enactment Date
+   ;;    2025-04-04, Ministry "Ministry of Commerce and Industry",
+   ;;    Department "Department of Promotion of Industry and Internal
+   ;;    Trade", Enforcement Date 01-05-2025)
+   ;;  - https://www.indiacode.nic.in/bitstream/123456789/21395/1/A2025-12.pdf
+   ;;    (the actual Act PDF, downloaded and run through `pdftotext`
+   ;;    this session -- 22 pages / 853 text lines). Confirmed text
+   ;;    read directly, not summarized from a secondary source:
+   ;;      "THE BOILERS ACT, 2025 ... ACT NO. 12 OF 2025 [4th April,
+   ;;      2025.] An Act to provide for the regulation of boilers,
+   ;;      safety of life and property of persons from the danger of
+   ;;      explosions of steam-boilers and for uniformity in
+   ;;      registration and inspection during manufacture, erection and
+   ;;      use of boilers in the country..."
+   ;;      footnote 1 to s.1(2): "1st day of May, 2025, vide Notifn. No.
+   ;;      S.O. 1943 (E), dated 30th day of April, 2025, see Gazette of
+   ;;      India, Extraordinary, Part II, sec. 3(ii)."
+   ;;      s.45(1): "The Boilers Act, 1923 (5 of 1923) is hereby
+   ;;      repealed."
+   ;;      s.3(2)(c): the Central Boilers Board's Central-Government-
+   ;;      nominated members must represent, among others, "(ii) the
+   ;;      Bureau of Indian Standards; (iii) boiler and boiler
+   ;;      components manufactures; ... (v) engineering consultancy
+   ;;      agencies".
+   ;;      s.7: "No person shall manufacture or cause to be manufactured
+   ;;      any boiler or boiler components, or both, unless -- (a) the
+   ;;      premises ... have such facilities for design and
+   ;;      construction as may be specified by regulations; (b) a
+   ;;      certificate for the design and drawings ... have been
+   ;;      granted by the inspecting authority ...; (c) the material,
+   ;;      mounting and fitting used in the construction ... conform to
+   ;;      such specifications as may be specified by regulations; and
+   ;;      (d) the person engaged in welding ... hold welders
+   ;;      certificate ..."
+   ;; Honesty gap (same pattern as the CHE note above): the word
+   ;; "turbine" does not appear verbatim anywhere in the Act text
+   ;; (verified by grep over the full pdftotext output) -- this entry
+   ;; is included on the same pressure-equipment adjacency the other
+   ;; four jurisdictions' entries already rely on (steam-turbine plant
+   ;; sits immediately downstream of the boiler/steam-pipe this Act
+   ;; regulates), not on a direct textual turbine reference. The Act's
+   ;; own "steam-pipe" definition (s.2(r)) is a pressure/diameter
+   ;; threshold test with no "prime mover" language in this 2025
+   ;; drafting, so no claim is made about steam-pipe coverage extending
+   ;; to a turbine's inlet. BIS-administered product standards for
+   ;; turbines specifically (as opposed to BIS's institutional board
+   ;; seat under s.3(2)(c)(ii) above) were not independently verified
+   ;; this session and are not cited here.
+   "IND" {:name "India"
+          :owner-authority "Central Boilers Board (Boilers Act 2025 s.3; Central-Government-nominated members required to include a Bureau of Indian Standards representative and boiler/boiler-component-manufacturer representatives) / Department for Promotion of Industry and Internal Trade (DPIIT), Ministry of Commerce and Industry"
+          :legal-basis "The Boilers Act, 2025 (Act No. 12 of 2025), enacted 4 April 2025, in force from 1 May 2025 (Notifn. No. S.O. 1943(E), dated 30 April 2025) -- repeals and replaces the Boilers Act, 1923 (5 of 1923), s.45(1)"
+          :national-spec "Indian conditions-precedent for manufacture of boiler and boiler components (s.7: design/drawings certificate from the inspecting authority, material/mounting/fitting specification conformance, welder certification), mandatory inspecting-authority inspection during manufacture and erection with a stamped certificate of inspection (ss.8-9), and prohibition of use of an unregistered or uncertified boiler (s.11) -- steam-pressure-equipment scope immediately upstream of steam-turbine plant, the same pressure-equipment adjacency the JPN/USA/GBR/DEU/CHE entries above already use for turbine coverage"
+          :provenance "https://www.indiacode.nic.in/handle/123456789/21395"
+          :required-evidence ["CAE-simulation-report"
+                              "CFD-verification-report"
+                              "NDT-chain-of-custody-record"
+                              "Material-certification-record"]}})
 
 (defn spec-basis [iso3] (get catalog iso3))
 
