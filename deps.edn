@@ -44,6 +44,7 @@
          {:local/root "../../kotoba-lang/langchain"}}}
   ;; clojure -M:dev:run  -> drive the demo through one OperationActor
   :run {:main-opts ["-m" "turbine.sim"]}
+  :render-html {:main-opts ["-m" "turbine.render-html"]}
   :export {:main-opts ["-m" "turbine.export-run"]}
   :test {:extra-paths ["test"]
          :extra-deps {io.github.cognitect-labs/test-runner
