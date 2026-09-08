@@ -1,6 +1,6 @@
 (ns turbine.render-html
   "Build-time HTML renderer. Drives the REAL actor stack deterministically."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [turbine.store :as store]
             [turbine.operation :as op]
             [langgraph.graph :as g]))

@@ -26,7 +26,7 @@
   (that is `turbine.operation`'s `:actuation/dispatch-unit`/
   `:actuation/issue-type-evidence`, always human-gated -- see
   README `Actuation`)."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn- unsigned-certificate
   "Every certificate this actor produces is UNSIGNED -- signature is the
@@ -72,7 +72,7 @@
     (throw (ex-info "block-dispatch: jurisdiction required" {})))
   (when (< sequence 0)
     (throw (ex-info "block-dispatch: sequence must be >= 0" {})))
-  (let [dispatch-number (str (str/upper-case jurisdiction) "-UNT-" (zero-pad sequence 6))
+  (let [dispatch-number (str (str/upper jurisdiction) "-UNT-" (zero-pad sequence 6))
         record {"record_id" dispatch-number
                 "kind" "unit-dispatch-draft"
                 "unit_id" unit-id
@@ -97,7 +97,7 @@
     (throw (ex-info "type-evidence: jurisdiction required" {})))
   (when (< sequence 0)
     (throw (ex-info "type-evidence: sequence must be >= 0" {})))
-  (let [evidence-number (str (str/upper-case jurisdiction) "-TYP-" (zero-pad sequence 6))
+  (let [evidence-number (str (str/upper jurisdiction) "-TYP-" (zero-pad sequence 6))
         record {"record_id" evidence-number
                 "kind" "type-evidence-draft"
                 "unit_id" unit-id
