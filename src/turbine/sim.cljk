@@ -1,5 +1,5 @@
 (ns turbine.sim
-  "Demo driver -- `clojure -M:dev:run`. Walks a clea unit through
+  "Demo driver -- `kbb -M:dev:run`. Walks a clea unit through
   intake -> requirements verification -> NDT-defect screening -> robot
   rod-bolt/head-bolt fastener-qualification mission (ADR-2607999500) ->
   block-dispatch proposal (always escalates) -> human approval ->
