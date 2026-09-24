@@ -1,0 +1,40 @@
+(ns turbine.physics-probe-test
+  "The probe is the bot's only source of \"measured\"; these pin that it
+  measures (every run numeric, count = expected), that the numbers come
+  from the simulation (the derived boundary really straddles the proof-load
+  floor), and that a changed solver would show."
+  (:require [clojure.test :refer [deftest is testing]]
+            [turbine.physics-probe :as probe]
+            [turbine.robotics :as robotics]))
+
+(deftest probe-measures-every-run
+  (let [p (probe/probe)]
+    (is (= "itonami.physical-ai.probe.v1" (:physics-probe/schema p)))
+    (is (pos? (:count p)))
+    (is (= (:count p) (:expected p) (count (:runs p))))
+    (testing "every run carries a numeric proof load and tick count from the trajectory"
+      (doseq [r (:runs p)]
+        (is (number? (get-in r [:quantities :sim-proof-load-force])))
+        (is (pos? (get-in r [:quantities :ticks])))))))
+
+(deftest proof-load-rises-with-mass-across-the-sweep
+  (let [forces (map #(get-in % [:quantities :sim-proof-load-force]) (:runs (probe/probe)))]
+    (is (apply < forces))))
+
+(deftest seeded-fixtures-land-on-both-sides-of-the-floor
+  (let [by-mass (into {} (map (juxt #(get-in % [:input :rod-bolt-mass-kg]) identity))
+                      (:runs (probe/probe)))]
+    (is (true? (:out-of-tolerance? (get by-mass 1.5))))
+    (is (false? (:out-of-tolerance? (get by-mass 2.5))))))
+
+(deftest derived-boundary-straddles-the-floor
+  (let [m (probe/min-passing-rod-bolt-mass-kg)
+        force (fn [kg] (:sim-proof-load-force
+                        (robotics/bolt-proof-load-telemetry-for {:rod-bolt-mass-kg kg})))]
+    (is (number? m))
+    (testing "at the boundary the proof load reaches the floor; 1% lighter it does not"
+      (is (>= (force m) robotics/min-rod-bolt-proof-load-n))
+      (is (< (force (* 0.99 m)) robotics/min-rod-bolt-proof-load-n)))))
+
+(deftest bracket-that-does-not-straddle-answers-nil
+  (is (nil? (probe/min-passing-rod-bolt-mass-kg 5.0 10.0 10))))
