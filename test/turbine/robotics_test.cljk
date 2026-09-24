@@ -10,7 +10,7 @@
   UNCHANGED pre-existing `turbine.facts` evidence checklist and
   `turbine.registry/unit-tolerance-out-of-range?` symbolic check,
   proving this ADR is purely additive."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [turbine.robotics :as robotics]))
 
 (defn- approx= [a b eps] (< (Math/abs (double (- a b))) eps))
